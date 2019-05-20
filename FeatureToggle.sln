@@ -5,9 +5,17 @@ VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FeatureToggleTests", "FeatureToggle\FeatureToggleTests.csproj", "{C0716ECA-927C-446C-8564-554945B79E63}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeatureServices", "FeatureServices\FeatureServices.csproj", "{A8BE123D-4302-461F-BDCE-59E79906097E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FeatureServices", "FeatureServices\FeatureServices.csproj", "{A8BE123D-4302-461F-BDCE-59E79906097E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeatureServices.Storage", "FeatureServices.Storage\FeatureServices.Storage.csproj", "{9DC7E14D-60CB-4604-93E0-CB00A250939B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FeatureServices.Storage", "FeatureServices.Storage\FeatureServices.Storage.csproj", "{9DC7E14D-60CB-4604-93E0-CB00A250939B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{193004DE-B252-4D58-B0C0-3E1FBD7A1ABB}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		CreateMigrations.ps1 = CreateMigrations.ps1
+		LICENSE.md = LICENSE.md
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
