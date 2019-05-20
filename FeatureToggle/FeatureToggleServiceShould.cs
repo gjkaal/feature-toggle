@@ -1,12 +1,44 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using FeatureServices.Storage;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Security.Claims;
 using Xunit;
 
 namespace FeatureServices
 {
+    public class StorageServiceShould
+    {
+        private static readonly ILogger<SqlServicesContext> logger = new Mock<ILogger<SqlServicesContext>>().Object;
+        private static readonly IConfiguration configuration;
+        private readonly StorageFactory _dbContextFactory = new StorageFactory(configuration, logger);
+
+        static StorageServiceShould()
+        {
+            var config = new ConfigurationBuilder();
+
+            config.SetBasePath(Directory.GetCurrentDirectory());
+            // Call additional providers here as needed.
+            // Call AddCommandLine last to allow arguments to override other configuration.
+            config.AddJsonFile("Config.secret");
+            configuration = config.Build();
+        }
+
+        [Fact]
+        public void Initialize()
+        {
+            using (var dbContext = _dbContextFactory.CreateDbContext(null))
+            {
+                dbContext.TenantConfiguration.Add(new Storage.DbModel.TenantConfiguration { });
+                dbContext.SaveChanges();
+            }
+
+        }
+    }
+
     public class FeatureServiceShould
     {
         private Mock<IFeatureStorage> featureStorageMoq = new Mock<IFeatureStorage>();

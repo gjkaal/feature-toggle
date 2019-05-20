@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FeatureServices.Storage\FeatureServices.Storage.csproj" />
     <ProjectReference Include="..\FeatureServices\FeatureServices.csproj" />
   </ItemGroup>
 
