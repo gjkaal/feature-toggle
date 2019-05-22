@@ -105,5 +105,73 @@ namespace FeatureServices
             Assert.True(resetValue);
         }
 
+        [Fact]
+        public async Task Integration_AdminUserCanModifyGlobalValue()
+        {
+            var user = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, "TestUser"),
+                new Claim(ClaimTypes.Role, "ToggleAdministrator"),
+                new Claim(ClaimTypes.Role, myApplication)
+            };
+
+            const string parameterName = "globalStringValue";
+            var storage = new SqlFeatureStorage(FeatureStorageLogger.Object, _dbContextFactory);
+            var service = new FeatureService(FeatureServiceLogger.Object, storage);
+
+            // Act
+            await service.SaveGlobal(user, validApiKey, myApplication, "userStringValue", "Global User value");
+            await service.SaveGlobal(user, validApiKey, myApplication, parameterName, "Global string value");
+            var setValue = await service.SaveGlobal(user, validApiKey, myApplication, parameterName, "New string value");
+
+            Assert.Equal("Global string value", setValue);
+            
+        }
+
+        [Fact]
+        public async Task Integration_UserCanSetUserValue()
+        {
+            const string userName = "TestUser";
+            var user = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, userName),
+                new Claim(ClaimTypes.Role, myApplication)
+            };
+
+            const string parameterName = "userStringValue";
+            var storage = new SqlFeatureStorage(FeatureStorageLogger.Object, _dbContextFactory);
+            var service = new FeatureService(FeatureServiceLogger.Object, storage);
+
+            // Act
+            await service.Remove(user, validApiKey, myApplication, parameterName);
+            var setValue = await service.Save(user, validApiKey, myApplication, parameterName, "New user value");
+
+            // should return global value, not the new value
+            Assert.Equal("Global User value", setValue);
+           
+        }
+
+        [Fact]
+        public async Task Integration_UserCanReadUserValue()
+        {
+            const string userName = "TestUser";
+            var user = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, userName),
+                new Claim(ClaimTypes.Role, myApplication)
+            };
+
+            const string parameterName = "savedStringValue";
+            var storage = new SqlFeatureStorage(FeatureStorageLogger.Object, _dbContextFactory);
+            var service = new FeatureService(FeatureServiceLogger.Object, storage);
+
+            var saveValue = await service.Save(user, validApiKey, myApplication, parameterName, "User string value");
+            // Act
+            var setValue = await service.Current<string>(user, validApiKey, myApplication, parameterName);
+
+            Assert.Equal("User string value", setValue);
+           
+        }
+
     }
 }

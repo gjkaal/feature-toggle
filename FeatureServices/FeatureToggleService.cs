@@ -10,7 +10,6 @@ namespace FeatureServices
 {
     public class FeatureService : IFeatureService
     {
-
         private const string Administrator = "ToggleAdministrator";
 
         private static readonly object _initializedLock = new object();
@@ -23,7 +22,6 @@ namespace FeatureServices
 
         private readonly IFeatureStorage _storage;
         private readonly ILogger<FeatureService> _logger;
-
 
         public bool Initialized => _initialized;
 
@@ -130,14 +128,23 @@ namespace FeatureServices
             return success;
         }
 
+        public async Task<bool> Remove(List<Claim> user, string apiKey, string applicationName, string parameterName)
+        {
+            return await Delete(user, false, apiKey, applicationName, parameterName);
+
+        }
+
+        public async Task<bool> RemoveGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName)
+        {
+            return await Delete(user, true, apiKey, applicationName, parameterName);
+        }
+
         public async Task<bool> ToggleGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName)
         {
             var currentValue = await Current(user, apiKey, applicationName, parameterName, false);
             await ChangeValue(user, true, apiKey, applicationName, parameterName, !currentValue);
             return currentValue;
         }
-
-
 
         private async Task<(bool success, T previousValue)> ChangeValue<T>(List<Claim> user, bool global, string apiKey, string applicationName, string parameterName, T newValue)
         {
@@ -160,13 +167,42 @@ namespace FeatureServices
                     Value = newValue
                 };
 
-                SaveItem(updateItem, userName);
+                await SaveItem(updateItem, userName);
                 return (true, oldValue);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, $"ChangeValue failed for {applicationName} {parameterName}");
                 return (false, oldValue);
+            }
+        }
+
+        private async Task<bool> Delete(List<Claim> user, bool global, string apiKey, string applicationName, string parameterName)
+        {
+            await ValidateApiKey(apiKey, applicationName);
+
+            user.HasClaim(ClaimTypes.Name);
+            if (global) user.IsInRole(Administrator);
+            user.IsInRole(applicationName);
+            try
+            {
+                var userName = user.UserName();
+                var key = global ? applicationName : $"{applicationName}-{userName}";
+               
+                var updateItem = new FeatureToggle
+                {
+                    ApiKey = apiKey,
+                    Key = key,
+                    Name = parameterName,
+                };
+
+                await DeleteItem(updateItem, userName);
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"Delete failed for {applicationName} {parameterName}");
+                return (false);
             }
         }
 
@@ -199,10 +235,17 @@ namespace FeatureServices
             };
         }
 
-        private void SaveItem<T>(FeatureToggle<T> item, string userName)
+        private async Task SaveItem<T>(FeatureToggle<T> item, string userName)
         {
-            _storage.SetFeatureValue(item.ApiKey, item.Key, item.Name, item.Value.ToString(), item.Value.GetType().ToString());
+            await _storage.SetFeatureValue(item.ApiKey, item.Key, item.Name, item.Value.ToString(), item.Value.GetType().ToString());
         }
+
+        private async Task DeleteItem(FeatureToggle item, string userName)
+        {
+            await _storage.RemoveFeatureValue(item.ApiKey, item.Key, item.Name);
+        }
+
+
         private async Task ValidateApiKey(string apiKey, string applicationName)
         {
             if (await Initialize(apiKey, applicationName)) return;

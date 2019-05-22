@@ -18,6 +18,9 @@ namespace FeatureServices
         Task<T> Save<T>(List<Claim> user, string apiKey, string applicationName, string parameterName, T newValue);
         Task<T> SaveGlobal<T>(List<Claim> user, string apiKey, string applicationName, string parameterName, T newValue);
 
+        Task<bool> Remove(List<Claim> user, string apiKey, string applicationName, string parameterName);
+        Task<bool> RemoveGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName);
+
         Task<bool> ResetGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName);
         Task<bool> SetGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName);
         Task<bool> ToggleGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName);

@@ -11,7 +11,7 @@ namespace FeatureServices
 {
     public class SqlFeatureStorage : IFeatureStorage
     {
-        private const string applicationName = "FeatireServices";
+        private const string dbApplicationName = "FeatureServices";
         private readonly IDbContextFactory _dbContextFactory;
         private readonly ILogger<SqlFeatureStorage> _logger;
         public SqlFeatureStorage(ILogger<SqlFeatureStorage> logger, IDbContextFactory dbContextFactory)
@@ -22,7 +22,7 @@ namespace FeatureServices
 
         private FeatureServicesContext GetDb()
         {
-            return _dbContextFactory.CreateDbContext<FeatureServicesContext>(applicationName);
+            return _dbContextFactory.CreateDbContext<FeatureServicesContext>(dbApplicationName);
         }
 
         public async Task<ICollection<ApiKey>> GetApiKeys()
@@ -138,6 +138,25 @@ namespace FeatureServices
                 {
                     exists.Value = value;
                     exists.Created = DateTime.UtcNow;
+                }
+                await db.SaveChangesAsync();
+            }
+        }
+
+        public async Task RemoveFeatureValue(string apiKey, string applicationName, string name)
+        {
+            using (var db = GetDb())
+            {
+                var exists = await db.FeatureValue
+                    .Where(t => !t.IsDeleted && !t.TenantConfiguration.IsDeleted
+                        && t.TenantConfiguration.Name == apiKey
+                        && t.Name == name
+                        && t.ApplicationName == applicationName)
+                    .FirstOrDefaultAsync();
+                if (exists != null)
+                {
+                    exists.Created = DateTime.UtcNow;
+                    exists.IsDeleted = true;
                 }
                 await db.SaveChangesAsync();
             }

@@ -13,5 +13,6 @@ namespace FeatureServices
         Task<FeatureConfig> GetStartupConfig(string apiKey, string applicationName);
 
         Task SetFeatureValue(string apiKey, string applicationName, string name, string value, string internalType);
+        Task RemoveFeatureValue(string apiKey, string key, string name);
     }
 }
