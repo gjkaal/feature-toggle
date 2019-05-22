@@ -20,4 +20,10 @@
     <ProjectReference Include="..\FeatureServices\FeatureServices.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Settings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

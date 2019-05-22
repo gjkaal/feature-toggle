@@ -19,11 +19,16 @@ namespace FeatureServices
         static StorageServiceShould()
         {
             var config = new ConfigurationBuilder();
+            var currentFolder = Directory.GetCurrentDirectory();
+            config.SetBasePath(currentFolder);
+            config.AddJsonFile(currentFolder + "\\Settings.json", true);
 
-            config.SetBasePath(Directory.GetCurrentDirectory());
             // Call additional providers here as needed.
             // Call AddCommandLine last to allow arguments to override other configuration.
-            config.AddJsonFile("Config.secret");
+
+            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            config.SetBasePath(userProfile);
+            config.AddJsonFile("UserSecrets.json", true);
             configuration = config.Build();
         }
 
