@@ -13,8 +13,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		CreateMigrations.ps1 = CreateMigrations.ps1
+		EfCommands.md = EfCommands.md
 		LICENSE.md = LICENSE.md
 		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Migration-Scripts", "Migration-Scripts", "{1B3BDBC7-89AD-44EE-878A-8C143631DF6B}"
+	ProjectSection(SolutionItems) = preProject
+		migration-scripts\20190522091035_SqlServerInitialCreate.sql = migration-scripts\20190522091035_SqlServerInitialCreate.sql
 	EndProjectSection
 EndProject
 Global

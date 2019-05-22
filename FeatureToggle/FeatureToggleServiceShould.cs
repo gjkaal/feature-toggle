@@ -12,9 +12,9 @@ namespace FeatureServices
 {
     public class StorageServiceShould
     {
-        private static readonly ILogger<SqlServicesContext> logger = new Mock<ILogger<SqlServicesContext>>().Object;
+        private static readonly ILogger<FeatureServicesContext> logger = new Mock<ILogger<FeatureServicesContext>>().Object;
         private static readonly IConfiguration configuration;
-        private readonly StorageFactory _dbContextFactory = new StorageFactory(configuration, logger);
+        private readonly FeatureServicesContextFactory _dbContextFactory = new FeatureServicesContextFactory();
 
         static StorageServiceShould()
         {
@@ -35,7 +35,8 @@ namespace FeatureServices
         [Fact]
         public void Initialize()
         {
-            using (var dbContext = _dbContextFactory.CreateDbContext(null))
+            var connectionString = configuration.GetConnectionString("FeatureServiceDb");
+            using (var dbContext = _dbContextFactory.CreateDbContext(new[] { connectionString }))
             {
                 dbContext.TenantConfiguration.Add(new Storage.DbModel.TenantConfiguration { });
                 dbContext.SaveChanges();
