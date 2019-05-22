@@ -3,7 +3,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,6 +13,9 @@ namespace FeatureServices
 {
     public class StorageServiceShould
     {
+        public const string myApplication = "StorageServiceShould";
+        public const string validApiKey = "MFRGCY3BMRQWE4TB";
+
         private static readonly IConfiguration _configuration;
         private static readonly DbContextFactory _dbContextFactory;
 
@@ -51,7 +56,7 @@ namespace FeatureServices
             // initialize
             var storage = new SqlFeatureStorage(FeatureStorageLogger.Object, _dbContextFactory);
             var service = new FeatureService(FeatureServiceLogger.Object, storage);
-            var initialized = await service.Initialize("MFRGCY3BMRQWE4TB", "StorageServiceShould");
+            var initialized = await service.Initialize(validApiKey, myApplication);
             Assert.True(initialized);
         }
 
@@ -62,7 +67,7 @@ namespace FeatureServices
             // initialize
             var storage = new SqlFeatureStorage(FeatureStorageLogger.Object, _dbContextFactory);
             var service = new FeatureService(FeatureServiceLogger.Object, storage);
-            var initialized = await service.Initialize("MFRGCY3BMRQWE4TB", "OtherApplication");
+            var initialized = await service.Initialize(validApiKey, "OtherApplication");
             Assert.True(initialized);
         }
 
@@ -72,8 +77,32 @@ namespace FeatureServices
             // initialize
             var storage = new SqlFeatureStorage(FeatureStorageLogger.Object, _dbContextFactory);
             var service = new FeatureService(FeatureServiceLogger.Object, storage);
-            var initialized = await service.Initialize("MFRGCY3BMRQWEAAA", "OtherApplication");
-            Assert.False(initialized);
+            var initialized = await service.Initialize(validApiKey, myApplication);
+            Assert.True(initialized);
+            service.Reset();
+            var initResult = await service.Initialize("invalidApiKey", myApplication);
+            Assert.NotNull(service);
+            Assert.False(initResult);
+        }
+
+
+        [Fact]
+        public async Task Integration_AdminUserCanModifyGlobalToggles()
+        {
+            var user = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, "TestUser"),
+                new Claim(ClaimTypes.Role, "ToggleAdministrator"),
+                new Claim(ClaimTypes.Role, myApplication)
+            };
+            var storage = new SqlFeatureStorage(FeatureStorageLogger.Object, _dbContextFactory);
+            var service = new FeatureService(FeatureServiceLogger.Object, storage);
+
+            var setValue = await service.SetGlobal(user, validApiKey, myApplication, "myToggle");
+            var resetValue = await service.ResetGlobal(user, validApiKey, myApplication, "myToggle");
+
+            Assert.True(setValue);
+            Assert.True(resetValue);
         }
 
     }

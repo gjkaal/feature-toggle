@@ -15,7 +15,7 @@ namespace FeatureServices
 
         private static readonly object _initializedLock = new object();
 
-        private static ConcurrentDictionary<string, FeatureConfig> _configurations = new ConcurrentDictionary<string, FeatureConfig>();
+        private static ConcurrentDictionary<string, FeatureConfig> _applications = new ConcurrentDictionary<string, FeatureConfig>();
 
         private static bool _initialized = false;
 
@@ -38,9 +38,9 @@ namespace FeatureServices
             return await Current(user, apiKey, applicationName, parameterName, default(T));
         }
 
-        public async Task< T> Current<T>(List<Claim> user, string apiKey, string applicationName, string parameterName, T defaultvalue)
+        public async Task<T> Current<T>(List<Claim> user, string apiKey, string applicationName, string parameterName, T defaultvalue)
         {
-            ValidateApiKey(apiKey);
+            await ValidateApiKey(apiKey, applicationName);
             user.HasClaim(ClaimTypes.Name);
             user.IsInRole(applicationName);
             try
@@ -75,16 +75,20 @@ namespace FeatureServices
 
             if (_validKeys.ContainsKey(apiKey))
             {
-                if (_configurations.ContainsKey(applicationName))
+                var applicationKey = $"{apiKey}:{applicationName}";
+                if (_applications.ContainsKey(applicationKey))
                 {
-                    return true;
+                    return _applications[applicationKey] != null;
                 }
                 var config = await _storage.GetStartupConfig(apiKey, applicationName);
                 if (config != null)
                 {
-                    return _configurations.TryAdd(applicationName, config);
+                    return _applications.TryAdd(applicationKey, config);
                 }
-                return false;
+                {
+                    _applications.TryAdd(applicationKey, null);
+                    return false;
+                }
             }
             else
             {
@@ -98,7 +102,7 @@ namespace FeatureServices
             {
                 _initialized = false;
                 _validKeys.Clear();
-                _configurations.Clear();
+                _applications.Clear();
             }
         }
 
@@ -128,8 +132,8 @@ namespace FeatureServices
 
         public async Task<bool> ToggleGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName)
         {
-            var currentValue =  await Current(user, apiKey, applicationName, parameterName, false);
-           await  ChangeValue(user, true, apiKey, applicationName, parameterName, !currentValue);
+            var currentValue = await Current(user, apiKey, applicationName, parameterName, false);
+            await ChangeValue(user, true, apiKey, applicationName, parameterName, !currentValue);
             return currentValue;
         }
 
@@ -137,7 +141,8 @@ namespace FeatureServices
 
         private async Task<(bool success, T previousValue)> ChangeValue<T>(List<Claim> user, bool global, string apiKey, string applicationName, string parameterName, T newValue)
         {
-            ValidateApiKey(apiKey);
+            await ValidateApiKey(apiKey, applicationName);
+
             user.HasClaim(ClaimTypes.Name);
             if (global) user.IsInRole(Administrator);
             user.IsInRole(applicationName);
@@ -158,8 +163,9 @@ namespace FeatureServices
                 SaveItem(updateItem, userName);
                 return (true, oldValue);
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                _logger.LogError(e, $"ChangeValue failed for {applicationName} {parameterName}");
                 return (false, oldValue);
             }
         }
@@ -197,13 +203,10 @@ namespace FeatureServices
         {
             _storage.SetFeatureValue(item.ApiKey, item.Key, item.Name, item.Value.ToString(), item.Value.GetType().ToString());
         }
-        private void ValidateApiKey(string apiKey)
+        private async Task ValidateApiKey(string apiKey, string applicationName)
         {
-            if (!_validKeys.ContainsKey(apiKey))
-            {
-                _logger.LogCritical($"Invalid api key used: {apiKey}");
-                throw new UnauthorizedAccessException($"Invalid API Key: {apiKey}");
-            }
+            if (await Initialize(apiKey, applicationName)) return;
+            throw new UnauthorizedAccessException($"Invalid ApiKey: {apiKey}");
         }
 
     }
