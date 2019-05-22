@@ -21,7 +21,4 @@ namespace FeatureServices.Storage
             DbModel.FeatureValue.Build(modelBuilder);
         }
     }
-
-
-    
 }

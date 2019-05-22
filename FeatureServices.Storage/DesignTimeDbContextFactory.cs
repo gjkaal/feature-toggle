@@ -13,7 +13,6 @@ namespace FeatureServices.Storage
         {
             var config = new ConfigurationBuilder();
             var currentFolder = Directory.GetCurrentDirectory();
-            config.SetBasePath(currentFolder);
             config.AddJsonFile(currentFolder + "\\Settings.json", true);
 
             var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -24,13 +23,18 @@ namespace FeatureServices.Storage
 
         public T CreateDbContext(string[] args)
         {
+            var typeName = typeof(T).Name;
             DbContextOptionsBuilder<T> builder = new DbContextOptionsBuilder<T>();
-            var connectionString = _configuration.GetConnectionString("FeatureServiceDb");
+            var connectionString = _configuration.GetConnectionString(typeName);
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new ArgumentOutOfRangeException("connectionString", $"Connectionstring not found : [{typeName}]");
+            }
+
             builder.UseSqlServer(connectionString);
 
-            T dbContext = (T)Activator.CreateInstance(
-                typeof(T),
-                builder.Options);
+            T dbContext = (T)Activator.CreateInstance(typeof(T), builder.Options);
             return dbContext;
         }
     }
