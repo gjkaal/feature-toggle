@@ -5,6 +5,12 @@ namespace FeatureServices.Storage.DbModel
 {
     public abstract class DbRecord
     {
+        public DbRecord()
+        {
+            Reference = Guid.NewGuid();
+            Created = DateTime.UtcNow;
+        }
+
         [Key]
         public int Id { get; set; }
         [MaxLength(50)]

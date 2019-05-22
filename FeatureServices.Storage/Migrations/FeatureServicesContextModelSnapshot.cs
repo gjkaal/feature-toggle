@@ -25,7 +25,11 @@ namespace FeatureServices.Storage.Migrations
                         .ValueGeneratedOnAdd()
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+                    b.Property<string>("ApplicationName");
+
                     b.Property<DateTime>("Created");
+
+                    b.Property<string>("InternalType");
 
                     b.Property<bool>("IsDeleted");
 
@@ -44,7 +48,11 @@ namespace FeatureServices.Storage.Migrations
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate();
 
+                    b.Property<string>("Value");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ApplicationName");
 
                     b.HasIndex("Name");
 

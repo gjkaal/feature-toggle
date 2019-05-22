@@ -41,6 +41,9 @@ namespace FeatureServices.Storage.Migrations
                     Created = table.Column<DateTime>(nullable: false),
                     IsDeleted = table.Column<bool>(nullable: false),
                     IsReadOnly = table.Column<bool>(nullable: false),
+                    ApplicationName = table.Column<string>(nullable: true),
+                    Value = table.Column<string>(nullable: true),
+                    InternalType = table.Column<string>(nullable: true),
                     TenantConfigurationId = table.Column<int>(nullable: false)
                 },
                 constraints: table =>
@@ -53,6 +56,11 @@ namespace FeatureServices.Storage.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FeatureValue_ApplicationName",
+                table: "FeatureValue",
+                column: "ApplicationName");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FeatureValue_Name",

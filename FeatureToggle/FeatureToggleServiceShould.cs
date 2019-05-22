@@ -25,18 +25,18 @@ namespace FeatureServices
                         new ApiKey { Id= validApiKey , TenantName="TestTenant"}
                     });
 
-            featureStorageMoq.Setup(q => q.GetStartupConfig(It.Is<string>(m => m != myApplication)))
+            featureStorageMoq.Setup(q => q.GetStartupConfig(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync (default(FeatureConfig));
 
-            featureStorageMoq.Setup(q => q.GetStartupConfig(It.Is<string>(m => m == myApplication)))
+            featureStorageMoq.Setup(q => q.GetStartupConfig(It.Is<string>(m => m == validApiKey), It.Is<string>(m => m == myApplication)))
                 .ReturnsAsync(new FeatureConfig
-                {
+                {                    
                     ApplicationName = myApplication,
                     Initialized = DateTime.UtcNow
                 });
 
             // initialize
-            service = new FeatureService(featureStorageMoq.Object, loggerMoq.Object);
+            service = new FeatureService(loggerMoq.Object, featureStorageMoq.Object );
             service.Initialize(validApiKey, myApplication);
         }
 
@@ -47,7 +47,7 @@ namespace FeatureServices
             featureStorageMoq.Invocations.Clear();
             var initResult = service.Initialize(validApiKey, myApplication);
             featureStorageMoq.Verify(mock => mock.GetApiKeys(), Times.Once());
-            featureStorageMoq.Verify(mock => mock.GetStartupConfig(It.Is<string>(q => q == myApplication)), Times.Once());
+            featureStorageMoq.Verify(mock => mock.GetStartupConfig(It.Is<string>(q => q == validApiKey), It.Is<string>(q => q == myApplication)), Times.Once());
 
             Assert.True(service.Initialized);
 
@@ -63,7 +63,7 @@ namespace FeatureServices
             service.Reset();
             var initResult = await service.Initialize(validApiKey, myApplication);
             featureStorageMoq.Verify(mock => mock.GetApiKeys(), Times.Once());
-            featureStorageMoq.Verify(mock => mock.GetStartupConfig(It.Is<string>(q => q == myApplication)), Times.Once());
+            featureStorageMoq.Verify(mock => mock.GetStartupConfig(It.Is<string>(q => q == validApiKey), It.Is<string>(q => q == myApplication)), Times.Once());
 
             Assert.NotNull(service);
             Assert.True(initResult);
@@ -77,7 +77,7 @@ namespace FeatureServices
             var initResult = await service.Initialize(validApiKey, myApplication);
             var reInitResult = await service.Initialize(validApiKey, myApplication);
             featureStorageMoq.Verify(mock => mock.GetApiKeys(), Times.Once());
-            featureStorageMoq.Verify(mock => mock.GetStartupConfig(It.Is<string>(q => q == myApplication)), Times.Once());
+            featureStorageMoq.Verify(mock => mock.GetStartupConfig(It.Is<string>(q => q == validApiKey), It.Is<string>(q => q == myApplication)), Times.Once());
             Assert.True(initResult);
             Assert.True(reInitResult);
         }

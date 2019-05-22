@@ -27,7 +27,7 @@ namespace FeatureServices
 
         public bool Initialized => _initialized;
 
-        public FeatureService(IFeatureStorage storage, ILogger<FeatureService> logger)
+        public FeatureService(ILogger<FeatureService> logger, IFeatureStorage storage)
         {
             _storage = storage;
             _logger = logger;
@@ -79,7 +79,7 @@ namespace FeatureServices
                 {
                     return true;
                 }
-                var config = await _storage.GetStartupConfig(applicationName);
+                var config = await _storage.GetStartupConfig(apiKey, applicationName);
                 if (config != null)
                 {
                     return _configurations.TryAdd(applicationName, config);
