@@ -8,7 +8,7 @@ namespace FeatureServices.Storage
 {
     public class DesignTimeDbContextFactory<T> : IDesignTimeDbContextFactory<T> where T : DbContext
     {
-        private readonly IConfiguration _configuration;
+        private DbContextFactory _dbContextFactory;
         public DesignTimeDbContextFactory()
         {
             var config = new ConfigurationBuilder();
@@ -18,27 +18,14 @@ namespace FeatureServices.Storage
             var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             config.SetBasePath(userProfile);
             config.AddJsonFile("UserSecrets.json", true);
-            _configuration = config.Build();
+
+            _dbContextFactory = new DbContextFactory(config.Build());
         }
 
         public T CreateDbContext(string[] args)
         {
-            var typeName = typeof(T).Name;
-            DbContextOptionsBuilder<T> builder = new DbContextOptionsBuilder<T>();
-            var connectionString = _configuration.GetConnectionString(typeName);
-
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                throw new ArgumentOutOfRangeException("connectionString", $"Connectionstring not found : [{typeName}]");
-            }
-
-            builder.UseSqlServer(connectionString);
-
-            T dbContext = (T)Activator.CreateInstance(typeof(T), builder.Options);
-            return dbContext;
+            return _dbContextFactory.CreateDbContext<T>("DesignTime");
         }
     }
 
-
-    
 }
