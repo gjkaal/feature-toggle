@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FeatureServices.Storage.Migrations
 {
     [DbContext(typeof(FeatureServicesContext))]
-    [Migration("20190522091035_SqlServerInitialCreate")]
-    partial class SqlServerInitialCreate
+    [Migration("20190522100857_SqlServerInitial")]
+    partial class SqlServerInitial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -62,6 +62,8 @@ namespace FeatureServices.Storage.Migrations
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                     b.Property<DateTime>("Created");
+
+                    b.Property<string>("Description");
 
                     b.Property<bool>("IsDeleted");
 

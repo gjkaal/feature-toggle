@@ -5,7 +5,7 @@ using System.Text;
 
 namespace FeatureServices.Storage
 {
-    public class DbContextFactory
+    public class DbContextFactory : IDbContextFactory
     {
         private readonly IConfiguration _configuration;
         public DbContextFactory(IConfiguration configuration)

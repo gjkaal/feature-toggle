@@ -61,6 +61,8 @@ namespace FeatureServices.Storage.Migrations
 
                     b.Property<DateTime>("Created");
 
+                    b.Property<string>("Description");
+
                     b.Property<bool>("IsDeleted");
 
                     b.Property<bool>("IsReadOnly");

@@ -5,6 +5,7 @@ namespace FeatureServices.Storage.DbModel
 {
     public class TenantConfiguration : DbRecord
     {
+        public string Description { get; set; }
         public virtual List<FeatureValue> FeatureValue { get; set; }
 
         public static ModelBuilder Build(ModelBuilder modelBuilder)

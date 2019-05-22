@@ -1,49 +1,13 @@
-﻿using FeatureServices.Storage;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace FeatureServices
 {
-    public class StorageServiceShould
-    {
-        private static readonly ILogger<FeatureServicesContext> logger = new Mock<ILogger<FeatureServicesContext>>().Object;
-        private static readonly IConfiguration configuration;
-        private readonly FeatureServicesContextFactory _dbContextFactory = new FeatureServicesContextFactory();
-
-        static StorageServiceShould()
-        {
-            var config = new ConfigurationBuilder();
-            var currentFolder = Directory.GetCurrentDirectory();
-            config.SetBasePath(currentFolder);
-            config.AddJsonFile(currentFolder + "\\Settings.json", true);
-
-            // Call additional providers here as needed.
-            // Call AddCommandLine last to allow arguments to override other configuration.
-
-            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            config.SetBasePath(userProfile);
-            config.AddJsonFile("UserSecrets.json", true);
-            configuration = config.Build();
-        }
-
-        [Fact]
-        public void Initialize()
-        {
-            var connectionString = configuration.GetConnectionString("FeatureServiceDb");
-            using (var dbContext = _dbContextFactory.CreateDbContext(new[] { connectionString }))
-            {
-                dbContext.TenantConfiguration.Add(new Storage.DbModel.TenantConfiguration { });
-                dbContext.SaveChanges();
-            }
-
-        }
-    }
 
     public class FeatureServiceShould
     {
@@ -56,16 +20,16 @@ namespace FeatureServices
         public FeatureServiceShould()
         {
             featureStorageMoq.Setup(q => q.GetApiKeys())
-                .Returns(
+                .ReturnsAsync(
                     new List<ApiKey> {
                         new ApiKey { Id= validApiKey , TenantName="TestTenant"}
                     });
 
             featureStorageMoq.Setup(q => q.GetStartupConfig(It.Is<string>(m => m != myApplication)))
-                .Returns(default(FeatureConfig));
+                .ReturnsAsync (default(FeatureConfig));
 
             featureStorageMoq.Setup(q => q.GetStartupConfig(It.Is<string>(m => m == myApplication)))
-                .Returns(new FeatureConfig
+                .ReturnsAsync(new FeatureConfig
                 {
                     ApplicationName = myApplication,
                     Initialized = DateTime.UtcNow
@@ -94,10 +58,10 @@ namespace FeatureServices
         }
 
         [Fact]
-        public void StartWithValidApiKey()
+        public async Task StartWithValidApiKey()
         {
             service.Reset();
-            var initResult = service.Initialize(validApiKey, myApplication);
+            var initResult = await service.Initialize(validApiKey, myApplication);
             featureStorageMoq.Verify(mock => mock.GetApiKeys(), Times.Once());
             featureStorageMoq.Verify(mock => mock.GetStartupConfig(It.Is<string>(q => q == myApplication)), Times.Once());
 
@@ -106,12 +70,12 @@ namespace FeatureServices
         }
 
         [Fact]
-        public void AcceptReinitializationApiKey()
+        public async Task AcceptReinitializationApiKey()
         {
             service.Reset();
             featureStorageMoq.Invocations.Clear();
-            var initResult = service.Initialize(validApiKey, myApplication);
-            var reInitResult = service.Initialize(validApiKey, myApplication);
+            var initResult = await service.Initialize(validApiKey, myApplication);
+            var reInitResult = await service.Initialize(validApiKey, myApplication);
             featureStorageMoq.Verify(mock => mock.GetApiKeys(), Times.Once());
             featureStorageMoq.Verify(mock => mock.GetStartupConfig(It.Is<string>(q => q == myApplication)), Times.Once());
             Assert.True(initResult);
@@ -119,16 +83,16 @@ namespace FeatureServices
         }
 
         [Fact]
-        public void RefuseInvalidApiKey()
+        public async Task RefuseInvalidApiKey()
         {
             service.Reset();
-            var initResult = service.Initialize("invalidApiKey", myApplication);
+            var initResult = await service.Initialize("invalidApiKey", myApplication);
             Assert.NotNull(service);
             Assert.False(initResult);
         }
 
         [Fact]
-        public void AdminUserCanModifyGlobalToggles()
+        public async Task AdminUserCanModifyGlobalToggles()
         {
             var user = new List<Claim>
             {
@@ -137,15 +101,15 @@ namespace FeatureServices
                 new Claim(ClaimTypes.Role, myApplication)
             };
 
-            var setValue = service.SetGlobal(user, validApiKey, myApplication, "myToggle");
-            var resetValue = service.ResetGlobal(user, validApiKey, myApplication, "myToggle");
+            var setValue = await service.SetGlobal(user, validApiKey, myApplication, "myToggle");
+            var resetValue = await service.ResetGlobal(user, validApiKey, myApplication, "myToggle");
 
             Assert.True(setValue);
             Assert.True(resetValue);
         }
 
         [Fact]
-        public void AdminUserCanModifyGlobalValue()
+        public async Task AdminUserCanModifyGlobalValue()
         {
             var user = new List<Claim>
             {
@@ -159,10 +123,10 @@ namespace FeatureServices
                 It.Is<string>(v => v == validApiKey),
                 It.Is<string>(m => m == myApplication),
                 It.Is<string>(m => m == parameterName)))
-                .Returns("Global string value");
+                .ReturnsAsync("Global string value");
 
             // Act
-            var setValue = service.SaveGlobal(user, validApiKey, myApplication, parameterName, "New string value");
+            var setValue = await service.SaveGlobal(user, validApiKey, myApplication, parameterName, "New string value");
 
             Assert.Equal("Global string value", setValue);
 
@@ -182,7 +146,7 @@ namespace FeatureServices
         }
 
         [Fact]
-        public void UserCanSetUserValue()
+        public async Task UserCanSetUserValue()
         {
             const string userName = "TestUser";
             var user = new List<Claim>
@@ -196,10 +160,10 @@ namespace FeatureServices
                 It.Is<string>(v => v == validApiKey),
                 It.Is<string>(m => m == myApplication),
                 It.Is<string>(m => m == parameterName)))
-                .Returns("Global string value");
+                .ReturnsAsync("Global string value");
 
             // Act
-            var setValue = service.Save(user, validApiKey, myApplication, parameterName, "New user value");
+            var setValue = await service.Save(user, validApiKey, myApplication, parameterName, "New user value");
 
             Assert.Equal("Global string value", setValue);
 
@@ -233,7 +197,7 @@ namespace FeatureServices
         }
 
         [Fact]
-        public void UserCanReadUserValue()
+        public async Task UserCanReadUserValue()
         {
             const string userName = "TestUser";
             var user = new List<Claim>
@@ -247,16 +211,16 @@ namespace FeatureServices
                 It.Is<string>(v => v == validApiKey),
                 It.Is<string>(m => m == myApplication),
                 It.Is<string>(m => m == parameterName)))
-                .Returns("Global string value");
+                .ReturnsAsync("Global string value");
 
             featureStorageMoq.Setup(q => q.GetFeatureValue(
                 It.Is<string>(v => v == validApiKey),
                 It.Is<string>(m => m == myApplication + '-' + userName),
                 It.Is<string>(m => m == parameterName)))
-                .Returns("User string value");
+                .ReturnsAsync("User string value");
 
             // Act
-            var setValue = service.Current<string>(user, validApiKey, myApplication, parameterName);
+            var setValue = await service.Current<string>(user, validApiKey, myApplication, parameterName);
 
             Assert.Equal("User string value", setValue);
 
@@ -274,7 +238,7 @@ namespace FeatureServices
         }
 
         [Fact]
-        public void ThrowsExceptionIfNotAuthorizedToModify()
+        public async Task ThrowsExceptionIfNotAuthorizedToModify()
         {
             var user = new List<Claim>
                 {
@@ -287,11 +251,11 @@ namespace FeatureServices
                 It.Is<string>(v => v == validApiKey),
                 It.Is<string>(m => m == myApplication),
                 It.Is<string>(m => m == parameterName)))
-                .Returns("Global string value");
+                .ReturnsAsync("Global string value");
 
-            Assert.Throws<UnauthorizedAccessException>(() =>
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(async () =>
             {
-                var value = service.SaveGlobal(user, validApiKey, myApplication, parameterName, "New string value");
+                var value = await service.SaveGlobal(user, validApiKey, myApplication, parameterName, "New string value");
             });
 
             featureStorageMoq.Verify(mock => mock.GetFeatureValue(
@@ -310,154 +274,155 @@ namespace FeatureServices
         }
 
         [Fact]
-        public void ThrowsExceptionIfNotAuthorizedToApplication()
+        public async Task ThrowsExceptionIfNotAuthorizedToApplication()
         {
-            Assert.Throws<UnauthorizedAccessException>(() =>
-            {
-                var user = new List<Claim>
-                {
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(async () =>
+             {
+                 var user = new List<Claim>
+                 {
                     new Claim(ClaimTypes.Name, "TestUser"),
                     new Claim(ClaimTypes.Role, "ToggleAdministrator"),
-                };
-                var value = service.Current(user, validApiKey, myApplication, "myToggle", true);
-            });
+                 };
+                 var value = await service.Current(user, validApiKey, myApplication, "myToggle", true);
+                 Assert.True(value);
+             });
         }
 
         [Fact]
-        public void ReturnsToggleValuesWithDefaultBool()
+        public async Task ReturnsToggleValuesWithDefaultBool()
         {
             var user = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, "TestUser"),
                 new Claim(ClaimTypes.Role, myApplication)
             };
-            var value = service.Current(user, validApiKey, myApplication, "myToggle", true);
+            var value = await service.Current(user, validApiKey, myApplication, "myToggle", true);
             Assert.True(value);
         }
 
         [Fact]
-        public void ReturnsToggleValuesWithDefaultString()
+        public async Task ReturnsToggleValuesWithDefaultString()
         {
             var user = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, "TestUser"),
                 new Claim(ClaimTypes.Role, myApplication)
             };
-            var value = service.Current(user, validApiKey, myApplication, "myToggle", "default");
+            var value = await service.Current(user, validApiKey, myApplication, "myToggle", "default");
             Assert.Equal("default", value);
         }
 
         [Fact]
-        public void ReturnsToggleValuesWithDefaultDecimal()
+        public async Task ReturnsToggleValuesWithDefaultDecimal()
         {
             var user = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, "TestUser"),
                 new Claim(ClaimTypes.Role, myApplication)
             };
-            var value = service.Current(user, validApiKey, myApplication, "myToggle", 3.14m);
+            var value = await service.Current(user, validApiKey, myApplication, "myToggle", 3.14m);
             Assert.Equal(3.14m, value);
         }
 
         [Fact]
-        public void ReturnsToggleValuesBool()
+        public async Task ReturnsToggleValuesBool()
         {
             featureStorageMoq.Setup(q => q.GetFeatureValue(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.Is<string>(m => m == "savedBoolValue")))
-                .Returns("true");
+                .ReturnsAsync("true");
 
             var user = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, "TestUser"),
                 new Claim(ClaimTypes.Role, myApplication)
             };
-            var value = service.Current<bool>(user, validApiKey, myApplication, "savedBoolValue");
+            var value = await service.Current<bool>(user, validApiKey, myApplication, "savedBoolValue");
             Assert.True(value);
         }
 
         [Fact]
-        public void ReturnsToggleValuesString()
+        public async Task ReturnsToggleValuesString()
         {
             featureStorageMoq.Setup(q => q.GetFeatureValue(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.Is<string>(m => m == "savedStringValue")))
-                .Returns("A string value");
+                .ReturnsAsync("A string value");
 
             var user = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, "TestUser"),
                 new Claim(ClaimTypes.Role, myApplication)
             };
-            var value = service.Current<string>(user, validApiKey, myApplication, "savedStringValue");
+            var value = await service.Current<string>(user, validApiKey, myApplication, "savedStringValue");
             Assert.Equal("A string value", value);
         }
 
         [Fact]
-        public void ReturnsUserValues()
+        public async Task ReturnsUserValues()
         {
             featureStorageMoq.Setup(q => q.GetFeatureValue(
                 It.IsAny<string>(),
                 It.Is<string>(m => m == "myApplication"),
                 It.Is<string>(m => m == "savedStringValue")))
-                .Returns("Global string value");
+                .ReturnsAsync("Global string value");
 
             featureStorageMoq.Setup(q => q.GetFeatureValue(
                 It.IsAny<string>(),
                 It.Is<string>(m => m == "myApplication-TestUser"),
                 It.Is<string>(m => m == "savedStringValue")))
-                .Returns("Testuser string value");
+                .ReturnsAsync("Testuser string value");
 
             var user = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, "TestUser"),
                 new Claim(ClaimTypes.Role, myApplication)
             };
-            var value = service.Current<string>(user, validApiKey, myApplication, "savedStringValue");
+            var value = await service.Current<string>(user, validApiKey, myApplication, "savedStringValue");
             Assert.Equal("Testuser string value", value);
         }
 
         [Fact]
-        public void ReturnsOnlyUserValues()
+        public async Task ReturnsOnlyUserValues()
         {
             featureStorageMoq.Setup(q => q.GetFeatureValue(
                 It.IsAny<string>(),
                 It.Is<string>(m => m == "myApplication"),
                 It.Is<string>(m => m == "savedStringValue")))
-                .Returns("Global string value");
+                .ReturnsAsync("Global string value");
 
             featureStorageMoq.Setup(q => q.GetFeatureValue(
                 It.IsAny<string>(),
                 It.Is<string>(m => m == "myApplication-OtherUser"),
                 It.Is<string>(m => m == "savedStringValue")))
-                .Returns("Testuser string value");
+                .ReturnsAsync("Testuser string value");
 
             var user = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, "TestUser"),
                 new Claim(ClaimTypes.Role, myApplication)
             };
-            var value = service.Current<string>(user, validApiKey, myApplication, "savedStringValue");
+            var value = await service.Current<string>(user, validApiKey, myApplication, "savedStringValue");
             Assert.Equal("Global string value", value);
         }
 
         [Fact]
-        public void ReturnsToggleValuesDefaultForTypeIfNotMatched()
+        public async Task ReturnsToggleValuesDefaultForTypeIfNotMatched()
         {
             featureStorageMoq.Setup(q => q.GetFeatureValue(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.Is<string>(m => m == "savedStringValue")))
-                .Returns("A string value");
+                .ReturnsAsync("A string value");
 
             var user = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, "TestUser"),
                 new Claim(ClaimTypes.Role, myApplication)
             };
-            var value = service.Current<int>(user, validApiKey, myApplication, "savedStringValue");
+            var value = await service.Current<int>(user, validApiKey, myApplication, "savedStringValue");
             Assert.Equal(0, value);
         }
     }

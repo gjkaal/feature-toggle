@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace FeatureServices
 {
@@ -32,12 +33,12 @@ namespace FeatureServices
             _logger = logger;
         }
 
-        public T Current<T>(List<Claim> user, string apiKey, string applicationName, string parameterName)
+        public async Task<T> Current<T>(List<Claim> user, string apiKey, string applicationName, string parameterName)
         {
-            return Current(user, apiKey, applicationName, parameterName, default(T));
+            return await Current(user, apiKey, applicationName, parameterName, default(T));
         }
 
-        public T Current<T>(List<Claim> user, string apiKey, string applicationName, string parameterName, T defaultvalue)
+        public async Task< T> Current<T>(List<Claim> user, string apiKey, string applicationName, string parameterName, T defaultvalue)
         {
             ValidateApiKey(apiKey);
             user.HasClaim(ClaimTypes.Name);
@@ -47,9 +48,9 @@ namespace FeatureServices
                 var username = user.UserName();
                 bool found;
                 T value;
-                (found, value) = Feature(apiKey, $"{applicationName}-{username}", parameterName, defaultvalue);
+                (found, value) = await Feature(apiKey, $"{applicationName}-{username}", parameterName, defaultvalue);
                 if (found) return value;
-                (found, value) = Feature(apiKey, applicationName, parameterName, defaultvalue);
+                (found, value) = await Feature(apiKey, applicationName, parameterName, defaultvalue);
                 return found ? value : defaultvalue;
             }
             catch (Exception e)
@@ -59,14 +60,14 @@ namespace FeatureServices
             }
         }
 
-        public bool Initialize(string apiKey, string applicationName)
+        public async Task<bool> Initialize(string apiKey, string applicationName)
         {
             if (!_initialized)
             {
-                var validKeys = _storage.GetApiKeys().ToList();
+                var validKeys = await _storage.GetApiKeys();
                 for (var i = 0; i < validKeys.Count; i++)
                 {
-                    var key = validKeys[i];
+                    var key = validKeys.ElementAt(i);
                     _validKeys.TryAdd(key.Id, key);
                 }
                 _initialized = true;
@@ -78,7 +79,7 @@ namespace FeatureServices
                 {
                     return true;
                 }
-                var config = _storage.GetStartupConfig(applicationName);
+                var config = await _storage.GetStartupConfig(applicationName);
                 if (config != null)
                 {
                     return _configurations.TryAdd(applicationName, config);
@@ -101,40 +102,40 @@ namespace FeatureServices
             }
         }
 
-        public bool ResetGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName)
+        public async Task<bool> ResetGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName)
         {
-            var (success, previousValue) = ChangeValue(user, true, apiKey, applicationName, parameterName, false);
+            var (success, previousValue) = await ChangeValue(user, true, apiKey, applicationName, parameterName, false);
             return success;
         }
 
-        public T Save<T>(List<Claim> user, string apiKey, string applicationName, string parameterName, T newValue)
+        public async Task<T> Save<T>(List<Claim> user, string apiKey, string applicationName, string parameterName, T newValue)
         {
-            var (success, oldValue) = ChangeValue(user, false, apiKey, applicationName, parameterName, newValue);
+            var (success, oldValue) = await ChangeValue(user, false, apiKey, applicationName, parameterName, newValue);
             return oldValue;
         }
 
-        public T SaveGlobal<T>(List<Claim> user, string apiKey, string applicationName, string parameterName, T newValue)
+        public async Task<T> SaveGlobal<T>(List<Claim> user, string apiKey, string applicationName, string parameterName, T newValue)
         {
-            var (success, oldValue) = ChangeValue(user, true, apiKey, applicationName, parameterName, newValue);
+            var (success, oldValue) = await ChangeValue(user, true, apiKey, applicationName, parameterName, newValue);
             return oldValue;
         }
 
-        public bool SetGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName)
+        public async Task<bool> SetGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName)
         {
-            var (success, previousValue) = ChangeValue(user, true, apiKey, applicationName, parameterName, true);
+            var (success, previousValue) = await ChangeValue(user, true, apiKey, applicationName, parameterName, true);
             return success;
         }
 
-        public bool ToggleGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName)
+        public async Task<bool> ToggleGlobal(List<Claim> user, string apiKey, string applicationName, string parameterName)
         {
-            var currentValue = Current(user, apiKey, applicationName, parameterName, false);
-            ChangeValue(user, true, apiKey, applicationName, parameterName, !currentValue);
+            var currentValue =  await Current(user, apiKey, applicationName, parameterName, false);
+           await  ChangeValue(user, true, apiKey, applicationName, parameterName, !currentValue);
             return currentValue;
         }
 
 
 
-        private (bool success, T previousValue) ChangeValue<T>(List<Claim> user, bool global, string apiKey, string applicationName, string parameterName, T newValue)
+        private async Task<(bool success, T previousValue)> ChangeValue<T>(List<Claim> user, bool global, string apiKey, string applicationName, string parameterName, T newValue)
         {
             ValidateApiKey(apiKey);
             user.HasClaim(ClaimTypes.Name);
@@ -145,7 +146,7 @@ namespace FeatureServices
             {
                 var userName = user.UserName();
                 var key = global ? applicationName : $"{applicationName}-{userName}";
-                oldValue = Current<T>(user, apiKey, applicationName, parameterName);
+                oldValue = await Current<T>(user, apiKey, applicationName, parameterName);
                 var updateItem = new FeatureToggle<T>
                 {
                     ApiKey = apiKey,
@@ -163,11 +164,11 @@ namespace FeatureServices
             }
         }
 
-        private (bool found, T value) Feature<T>(string apiKey, string applicationName, string parameterName, T defaultvalue)
+        private async Task<(bool found, T value)> Feature<T>(string apiKey, string applicationName, string parameterName, T defaultvalue)
         {
             var found = false;
             T itemValue;
-            string value = _storage.GetFeatureValue(apiKey, applicationName, parameterName);
+            string value = await _storage.GetFeatureValue(apiKey, applicationName, parameterName);
             if (string.IsNullOrEmpty(value))
             {
                 itemValue = defaultvalue;
@@ -180,9 +181,9 @@ namespace FeatureServices
             return (found, itemValue);
         }
 
-        private FeatureToggle<T> LoadItem<T>(string apiKey, string applicationName, string parameterName, T defaultValue)
+        private async Task<FeatureToggle<T>> LoadItem<T>(string apiKey, string applicationName, string parameterName, T defaultValue)
         {
-            var (found, itemValue) = Feature<T>(apiKey, applicationName, parameterName, defaultValue);
+            var (found, itemValue) = await Feature<T>(apiKey, applicationName, parameterName, defaultValue);
             return new FeatureToggle<T>
             {
                 ApiKey = apiKey,

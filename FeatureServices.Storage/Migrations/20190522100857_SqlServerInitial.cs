@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace FeatureServices.Storage.Migrations
 {
-    public partial class SqlServerInitialCreate : Migration
+    public partial class SqlServerInitial : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -20,7 +20,8 @@ namespace FeatureServices.Storage.Migrations
                     TimeStamp = table.Column<byte[]>(rowVersion: true, nullable: true),
                     Created = table.Column<DateTime>(nullable: false),
                     IsDeleted = table.Column<bool>(nullable: false),
-                    IsReadOnly = table.Column<bool>(nullable: false)
+                    IsReadOnly = table.Column<bool>(nullable: false),
+                    Description = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {
