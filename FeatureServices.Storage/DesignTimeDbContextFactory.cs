@@ -6,9 +6,9 @@ using System.IO;
 
 namespace FeatureServices.Storage
 {
-    public class DesignTimeDbContextFactory<T> : IDesignTimeDbContextFactory<T> where T : DbContext
+    public class DesignTimeDbContextFactory<T> : IDesignTimeDbContextFactory<T> where T : DbContext, ITenantContext
     {
-        private DbContextFactory _dbContextFactory;
+        private readonly DbContextFactory _dbContextFactory;
         public DesignTimeDbContextFactory()
         {
             var config = new ConfigurationBuilder();

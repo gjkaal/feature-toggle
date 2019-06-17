@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.572
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29009.5
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FeatureToggleTests", "FeatureToggle\FeatureToggleTests.csproj", "{C0716ECA-927C-446C-8564-554945B79E63}"
 EndProject
@@ -21,6 +21,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Migration-Scripts", "Migration-Scripts", "{1B3BDBC7-89AD-44EE-878A-8C143631DF6B}"
 	ProjectSection(SolutionItems) = preProject
 		migration-scripts\20190522091035_SqlServerInitialCreate.sql = migration-scripts\20190522091035_SqlServerInitialCreate.sql
+		migration-scripts\20190617190201_SqlServerUniqueConfig.sql = migration-scripts\20190617190201_SqlServerUniqueConfig.sql
 	EndProjectSection
 EndProject
 Global

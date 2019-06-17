@@ -19,8 +19,8 @@ namespace FeatureServices
         private static readonly IConfiguration _configuration;
         private static readonly DbContextFactory _dbContextFactory;
 
-        private Mock<ILogger<FeatureService>> FeatureServiceLogger = new Mock<ILogger<FeatureService>>();
-        private Mock<ILogger<SqlFeatureStorage>> FeatureStorageLogger = new Mock<ILogger<SqlFeatureStorage>>();
+        private readonly Mock<ILogger<FeatureService>> FeatureServiceLogger = new Mock<ILogger<FeatureService>>();
+        private readonly Mock<ILogger<SqlFeatureStorage>> FeatureStorageLogger = new Mock<ILogger<SqlFeatureStorage>>();
 
         static StorageServiceShould()
         {
@@ -45,6 +45,7 @@ namespace FeatureServices
         {
             using (var dbContext = _dbContextFactory.CreateDbContext<FeatureServicesContext>("FeatureServiceTest"))
             {
+                dbContext.Tenant(0);
                 await dbContext.CreateApi("MFRGCY3BMRQWE4TB", "Nice 2 Experience");
                 dbContext.SaveChanges();
             }

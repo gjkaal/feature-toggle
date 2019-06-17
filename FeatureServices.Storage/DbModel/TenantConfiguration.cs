@@ -10,7 +10,9 @@ namespace FeatureServices.Storage.DbModel
 
         public static ModelBuilder Build(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<TenantConfiguration>().HasIndex(b => b.Name);
+            modelBuilder.Entity<TenantConfiguration>()
+                .HasIndex(b => b.Name)
+                .IsUnique();
             return modelBuilder;
         }
     }
