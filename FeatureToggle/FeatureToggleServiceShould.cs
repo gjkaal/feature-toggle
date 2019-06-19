@@ -11,10 +11,10 @@ namespace FeatureServices
 
     public class FeatureServiceShould
     {
-        private Mock<IFeatureStorage> featureStorageMoq = new Mock<IFeatureStorage>();
-        private Mock<ILogger<FeatureService>> loggerMoq = new Mock<ILogger<FeatureService>>();
-        private string validApiKey = "7AAF2182-1BA6-4909-B587-6578BB08D6B6";
-        private string myApplication = "myApplication";
+        private readonly Mock<IFeatureStorage> featureStorageMoq = new Mock<IFeatureStorage>();
+        private readonly Mock<ILogger<FeatureService>> loggerMoq = new Mock<ILogger<FeatureService>>();
+        private readonly string validApiKey = "7AAF2182-1BA6-4909-B587-6578BB08D6B6";
+        private readonly string myApplication = "myApplication";
         private readonly IFeatureService service;
 
         public FeatureServiceShould()

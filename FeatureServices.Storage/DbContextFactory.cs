@@ -31,7 +31,7 @@ namespace FeatureServices.Storage
 
             builder.UseSqlServer(connectionString.ToString());
 
-            T dbContext = (T)Activator.CreateInstance(typeof(T), builder.Options);
+            T dbContext = (T)Activator.CreateInstance(typeof(T), builder.Options);            
             return dbContext;
         }
     }

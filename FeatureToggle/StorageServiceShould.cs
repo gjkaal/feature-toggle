@@ -166,10 +166,10 @@ namespace FeatureServices
             var storage = new SqlFeatureStorage(FeatureStorageLogger.Object, _dbContextFactory);
             var service = new FeatureService(FeatureServiceLogger.Object, storage);
 
-            var saveValue = await service.Save(user, validApiKey, myApplication, parameterName, "User string value");
+            await service.Save(user, validApiKey, myApplication, parameterName, "User string value");
             // Act
             var setValue = await service.Current<string>(user, validApiKey, myApplication, parameterName);
-
+            
             Assert.Equal("User string value", setValue);
            
         }

@@ -5,6 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="FeatureToggleException.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Exceptions\FeatureToggleException.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="microsoft.extensions.logging" Version="2.2.0" />
   </ItemGroup>
 
